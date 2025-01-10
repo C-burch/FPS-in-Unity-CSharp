@@ -1,0 +1,134 @@
+using UnityEngine;
+
+public class WeaponController : MonoBehaviour
+{
+    public Camera playerCamera;
+    public float shootingRange = 100f;
+    public float damage = 25f;
+    public GameObject bulletImpactEffect;
+
+    // Reloading variables
+    public int maxAmmo = 30;
+    public int currentAmmo;
+    public float reloadTime = 2f;
+    private bool isReloading = false;
+
+    // Aiming down sights (ADS)
+    public float adsFOV = 30f; // Field of view while aiming down sights
+    public float defaultFOV = 60f; // Default field of view
+    private bool isAiming = false;
+
+    // Weapon switching
+    public WeaponController[] allWeapons;
+    private int currentWeaponIndex = 0;
+
+    void Start()
+    {
+        currentAmmo = maxAmmo; // Initialize ammo
+    }
+
+    void Update()
+    {
+        if (isReloading)
+            return;
+
+        // Shooting
+        if (Input.GetMouseButtonDown(0)) // Left mouse button for shooting
+        {
+            if (currentAmmo > 0)
+            {
+                Shoot();
+            }
+            else
+            {
+                Debug.Log("Out of ammo!");
+            }
+        }
+
+        // Reloading
+        if (Input.GetKeyDown(KeyCode.R)) // R key to reload
+        {
+            StartCoroutine(Reload());
+        }
+
+        // Aiming down sights (ADS)
+        if (Input.GetMouseButtonDown(1)) // Right mouse button to aim
+        {
+            ToggleAim(true);
+        }
+        else if (Input.GetMouseButtonUp(1))
+        {
+            ToggleAim(false);
+        }
+
+        // Weapon Switching (1, 2 keys)
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            SwitchWeapon(0);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2) && allWeapons.Length > 1)
+        {
+            SwitchWeapon(1);
+        }
+    }
+
+    void Shoot()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, shootingRange))
+        {
+            // Log hit information
+            Debug.Log("Hit " + hit.transform.name);
+            // Apply damage or hit effects
+            if (hit.transform.TryGetComponent(out Health health))
+            {
+                health.TakeDamage(damage);
+            }
+
+            // Create impact effect
+            if (bulletImpactEffect != null)
+            {
+                Instantiate(bulletImpactEffect, hit.point, Quaternion.LookRotation(hit.normal));
+            }
+
+            currentAmmo--; // Decrease ammo after shooting
+        }
+    }
+
+    System.Collections.IEnumerator Reload()
+    {
+        isReloading = true;
+        Debug.Log("Reloading...");
+
+        // Play reload animation (if any) and wait for the reload time
+        yield return new WaitForSeconds(reloadTime);
+
+        currentAmmo = maxAmmo; // Refill ammo
+        isReloading = false;
+        Debug.Log("Reload Complete!");
+    }
+
+    void ToggleAim(bool aiming)
+    {
+        isAiming = aiming;
+
+        if (isAiming)
+        {
+            playerCamera.fieldOfView = adsFOV; // Change FOV for ADS
+        }
+        else
+        {
+            playerCamera.fieldOfView = defaultFOV; // Return to default FOV
+        }
+    }
+
+    void SwitchWeapon(int weaponIndex)
+    {
+        if (weaponIndex < 0 || weaponIndex >= allWeapons.Length)
+            return;
+
+        allWeapons[currentWeaponIndex].gameObject.SetActive(false); // Disable current weapon
+        currentWeaponIndex = weaponIndex; // Switch to new weapon
+        allWeapons[currentWeaponIndex].gameObject.SetActive(true); // Enable the new weapon
+    }
+}
