@@ -1,0 +1,42 @@
+using UnityEngine;
+
+public class Health : MonoBehaviour
+{
+    public float health = 100f;
+    public float respawnTime = 5f; // Time before the player respawns
+    private RespawnManager respawnManager; // Reference to the RespawnManager
+
+    void Start()
+    {
+        // Get the RespawnManager reference
+        respawnManager = FindObjectOfType<RespawnManager>();
+    }
+
+    public void TakeDamage(float amount)
+    {
+        health -= amount;
+        if (health <= 0)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        // Call the RespawnManager to handle respawning
+        if (respawnManager != null)
+        {
+            respawnManager.OnPlayerDeath(this.gameObject);
+        }
+        else
+        {
+            Destroy(gameObject); // If there's no RespawnManager, just destroy the object
+        }
+    }
+
+    // Optionally, reset health when respawning
+    public void ResetHealth()
+    {
+        health = 100f;
+    }
+}
